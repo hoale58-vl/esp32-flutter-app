@@ -84,7 +84,7 @@ class FindDevicesScreen extends StatelessWidget {
                           subtitle: Text(result.device.id.toString()),
                           onTap: () => Navigator.of(context)
                               .push(MaterialPageRoute(builder: (context) {
-                            result.device.connect();
+                            result.device.connect(autoConnect: false);
                             return DeviceScreen(device: result.device);
                           })),
                         ))
@@ -108,7 +108,7 @@ class FindDevicesScreen extends StatelessWidget {
             return FloatingActionButton(
                 child: const Icon(Icons.search),
                 onPressed: () => FlutterBlue.instance
-                    .startScan(timeout: const Duration(seconds: 4)));
+                    .startScan(timeout: const Duration(seconds: 10)));
           }
         },
       ),

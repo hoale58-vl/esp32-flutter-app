@@ -1,39 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
+import 'package:collection/collection.dart';
 
+const String myServiceUUID = "00005895-0000-1000-8000-00805f9b34fb";
 class DeviceScreen extends StatelessWidget {
   const DeviceScreen({Key? key, required this.device}) : super(key: key);
 
   final BluetoothDevice device;
 
-  List<Widget> _buildServiceTiles(List<BluetoothService> services) {
-    return services
-        //show only the last service
-        .sublist(services.length - 1)
-        .map((e) => Column(
-              children: [
-                ListTile(
-                  title: const Text("OFF"),
-                  onTap: () {
-                    e.characteristics[0].write([0]);
-                  },
-                ),
-                ListTile(
-                  title: const Text("ON"),
-                  onTap: () {
-                    e.characteristics[0].write([1]);
-                  },
-                ),
-                ListTile(
-                  title: const Text("READ"),
-                  onTap: () async {
-                    e.characteristics[0].write([3]);
-                    //await e.characteristics[0].read();
-                  },
-                ),
-              ],
-            ))
-        .toList();
+  Widget _buildCharacteristicTiles(List<BluetoothCharacteristic> characteristics) {
+      return  Column(
+        children: characteristics.asMap().entries
+          .map((entry) => 
+              StreamBuilder<List<int>>(
+                stream: entry.value.value,
+                initialData: entry.value.lastValue,
+                builder: (c, snapshot) {
+                  final value = snapshot.data;
+                  print(value);
+                  return ListTile(
+                    title: Text(
+                      'Kit ${entry.key + 1}'
+                    ),
+                    leading: Switch(
+                      value: value != null && value.isNotEmpty && value[0] == 1 ? true : false,
+                      activeColor: const Color(0xFF6200EE),
+                      onChanged:  (bool value) async {
+                        await entry.value.setNotifyValue(true);
+                        entry.value.write([value ? 1 : 0]);
+                      },
+                    )
+                  );
+                }
+              ),
+            ).toList()
+          );
+  }
+
+  Widget _buildServiceTiles(List<BluetoothService> services) {
+    BluetoothService? myService = services.firstWhereOrNull(
+      (service) => service.uuid.toString() == myServiceUUID);
+      return Container(
+        child: myService != null ? _buildCharacteristicTiles(myService.characteristics) : Container(),
+      );
   }
 
   @override
@@ -115,11 +124,8 @@ class DeviceScreen extends StatelessWidget {
             ),
             StreamBuilder<List<BluetoothService>>(
               stream: device.services,
-              initialData: const [],
               builder: (c, snapshot) {
-                return Column(
-                  children: _buildServiceTiles(snapshot.data!),
-                );
+                return snapshot.data != null ? _buildServiceTiles(snapshot.data!) : Container();
               },
             ),
           ],
