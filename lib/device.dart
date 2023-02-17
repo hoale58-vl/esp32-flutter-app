@@ -1,3 +1,4 @@
+import 'package:esp32_flutter/characteristic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:collection/collection.dart';
@@ -8,40 +9,11 @@ class DeviceScreen extends StatelessWidget {
 
   final BluetoothDevice device;
 
-  Widget _buildCharacteristicTiles(List<BluetoothCharacteristic> characteristics) {
-      return  Column(
-        children: characteristics.asMap().entries
-          .map((entry) => 
-              StreamBuilder<List<int>>(
-                stream: entry.value.value,
-                initialData: entry.value.lastValue,
-                builder: (c, snapshot) {
-                  final value = snapshot.data;
-                  print(value);
-                  return ListTile(
-                    title: Text(
-                      'Kit ${entry.key + 1}'
-                    ),
-                    leading: Switch(
-                      value: value != null && value.isNotEmpty && value[0] == 1 ? true : false,
-                      activeColor: const Color(0xFF6200EE),
-                      onChanged:  (bool value) async {
-                        await entry.value.setNotifyValue(true);
-                        entry.value.write([value ? 1 : 0]);
-                      },
-                    )
-                  );
-                }
-              ),
-            ).toList()
-          );
-  }
-
   Widget _buildServiceTiles(List<BluetoothService> services) {
     BluetoothService? myService = services.firstWhereOrNull(
       (service) => service.uuid.toString() == myServiceUUID);
       return Container(
-        child: myService != null ? _buildCharacteristicTiles(myService.characteristics) : Container(),
+        child: myService != null ? CharacteristicTileWidget(characteristics: myService.characteristics) : Container(),
       );
   }
 
